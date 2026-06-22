@@ -178,7 +178,6 @@ def main():
         E = range(len(Provas))    # Conjunto de provas, de tamanho 7 (indícde 0 à 6, E[0] = 0, E[1] = 1, etc.)
 
         # Conjunto de horários, de tamanho 10 (indíce 0 à 9)
-
         Horarios = {
             0: "Segunda 08h",
             1: "Segunda 14h",
@@ -222,7 +221,10 @@ def main():
         len_provas = len(E)    # Número de provas totais
         c = np.zeros((len_provas, len_provas)) # Criação de matriz auxiliar - elemento ij representa quantos alunos farão a prova i e j
 
+        # Constrói a matriz de conflitos, onde o elemento c[i][j] representa quantos alunos farão a prova i e a prova j.
         for i in range(0,len_provas):
+            # Utiliza-se da simetria da matriz para reduzir o custo computacional, percorrendo apenas
+            # a parte superior da diagonal principal e refletindo os valores para a parte inferior.
             for j in range(i + 1, len_provas):
                 for aluno in Matrículas:
                     if i in Matrículas[aluno] and j in Matrículas[aluno]:
@@ -232,8 +234,10 @@ def main():
         # O cálculo das penalidades foi feito seguindo um padrão arbitrário descrescente (ou seja, quanto mais próximas, maior a punição)
 
         num_horarios = len(T)
-        w = np.zeros((num_horarios, num_horarios)) # De tamanho mXm pois é o custo pra fazer um aprova no horário i e outra no j. Ou seja, se i == j há conflito e o custo é máximo
+        w = np.zeros((num_horarios, num_horarios)) # De tamanho mXm pois é o custo pra fazer uma prova no horário i e outra no j. Ou seja, se i == j há conflito e o custo é máximo
 
+        # Constrói a matriz de custos, de forma que o custo seja maior conforme menor a distância entre os horários. Para conflitos diretos (t1 == t2), o custo é maximo (1000),  e vai decrescendo conforme a distância aumenta.
+        # Dessa forma, w[i][j] representa o custo de fazer uma prova no horário i e outra no horário j.
         for t1 in T:
             for t2 in T:
                 dist = abs(t1 - t2)
@@ -309,18 +313,18 @@ def main():
 
     start = time.time()   # Marca o início da execução
     # Gera a nova solução
-    new_sol, new_cost = simulated_annealing(solucao, conflitos,len(Provas), len(Horarios), w, alpha=0.99999)
+    new_sol, new_cost = simulated_annealing(solucao, conflitos,len(Provas), len(Horarios), w, alpha=0.9999)
     end = time.time()     # Marca o fim da execução
 
     # Exibe a solução e o custo final
-    print(f"Tempo de execução: {(end - start):.6f} segundos")
+    print(f"\nTempo de execução: {(end - start):.6f} segundos")
     print(f"Solução final encontrada => {new_sol}")
-    print(f"Custo da solução: {new_cost}")
+    print(f"Custo da solução: {new_cost}\n")
 
     print("\nSolução detalhada:")
     for i in range(len(new_sol)):
         print(f"Prova de {Provas[i]}: {Horarios[new_sol[i]]}")
-
+    print(f"\n")
 # Main --------------
 DEFAULT_VALS = True
 

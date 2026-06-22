@@ -1,6 +1,7 @@
 import numpy as np
 import random
 import math
+import time
 
 def custo(solucao: list[int], conflitos: list[tuple[int,int,int]], custos: list[list[int]]) -> int:
     """
@@ -128,7 +129,10 @@ def simulated_annealing(initial_sol: list[int],
         delta = neighbor_cost - custo_atual
 
         # Probabilidade de aceitar a nova solução
-        prob = math.exp(-delta/T_cur)
+        if delta > 0:
+            prob = math.exp(-delta/T_cur)
+        else:
+            prob = 1.0
 
         # Aceita a solução, se esta for melhor que a atual ou se o número gerado for menor do que a probabilidade de ser aceita
         if delta < 0 or random.random() < prob:
@@ -151,7 +155,7 @@ def main():
     # Modelando o problema ------------------------------------------------------------------------
 
     # Parâmetros para geração dinâmica
-    p = 30  # Número total de alunos
+    p = 20  # Número total de alunos
     n = 3   # Número de provas a serem realizadas
     m = 4   # Número de horários disponíveis
 
@@ -160,41 +164,93 @@ def main():
 
         # Conjuntos iniciais:
 
-        Alunos = np.arange(30)   # Conjunto de alunos, de tamanho 30 (indíce 0 à 29, com A[0] = 0, E[1] = 1, etc.)
+        # Conjunto de provas, de tamanho 7 (indícde 0 à 6)
+        Provas = {
+            0: "Circuitos Eletrônicos 1",
+            1: "Fundamentos de Controle",
+            2: "Ondas Eletromagnéticas",
+            3: "Programação Matemática",
+            4: "Estatística 1",
+            5: "Processamento Digital de Sinais",
+            6: "Sistemas Operacionais 1"
+        }
 
-        Provas = np.arange(3)    # Conjunto de provas, de tamanho 3 (indíce 0 à 2, com E[0] = 0, E[1] = 1, etc.)
+        E = range(len(Provas))    # Conjunto de provas, de tamanho 7 (indícde 0 à 6, E[0] = 0, E[1] = 1, etc.)
 
-        Horarios = np.arange(4)  # Conjunto de horários, de tamanho 4 (indíce 0 à 3, com E[0] = 0, E[1] = 1, etc.)
+        # Conjunto de horários, de tamanho 10 (indíce 0 à 9)
 
-        c = np.zeros((3,3)) # Criação de matriz auxiliar - elemento ij representa quantos alunos farão a prova i e j
+        Horarios = {
+            0: "Segunda 08h",
+            1: "Segunda 14h",
+            2: "Terça 08h",
+            3: "Terça 14h",
+            4: "Quarta 08h",
+            5: "Quarta 14h",
+            6: "Quinta 08h",
+            7: "Quinta 14h",
+            8: "Sexta 08h",
+            9: "Sexta 14h"
+        }
 
-        # Quantidade de alunos por prova
-        c[0][0] = 18
-        c[1][1] = 20
-        c[2][2] = 16
+        T = range(len(Horarios))    # Conjunto de horários, de tamanho 10 (indíce 0 à 9, T[0] = 0, T[1] = 1, etc.)
 
-        # Conflitos entre provas - matriz deve ser simétrica c[i][j] == c[j][i]
-        c[0][1] = 7
-        c[1][0] = 7
+        # Conjunto de alunos, de tamanho 20 (indíce 0 à 19)
+        # O dicionário representa que o i-ésimo aluno deve fazer provas das disciplinas listadas.
+        Matrículas = {
+            0: [0, 1, 3],
+            1: [0, 2, 4],
+            2: [1, 3, 5],
+            3: [0, 4, 6],
+            4: [2, 3, 5],
+            5: [1, 4, 6],
+            6: [0, 2, 5],
+            7: [1, 3, 6],
+            8: [0, 4, 5],
+            9: [2, 3, 6],
+            10: [0, 1, 5],
+            11: [2, 4, 6],
+            12: [1, 3, 4],
+            13: [0, 2, 6],
+            14: [1, 5, 6],
+            15: [0, 3, 4],
+            16: [2, 4, 5],
+            17: [1, 2, 3],
+            18: [0, 5, 6],
+            19: [3, 4, 6]
+        }
 
-        c[0][2] = 5
-        c[2][0] = 5
+        len_provas = len(E)    # Número de provas totais
+        c = np.zeros((len_provas, len_provas)) # Criação de matriz auxiliar - elemento ij representa quantos alunos farão a prova i e j
 
-        c[1][2] = 9
-        c[2][1] = 9
+        for i in range(0,len_provas):
+            for j in range(i + 1, len_provas):
+                for aluno in Matrículas:
+                    if i in Matrículas[aluno] and j in Matrículas[aluno]:
+                        c[i][j] += 1
+                        c[j][i] += 1
 
-        # Matriz de custos
-        w = np.array(
-            [
-                [100, 10, 5 , 1],
-                [10, 100, 10 , 5],
-                [5, 10, 100 , 10],
-                [1, 5, 10 , 100]
-            ]
-        )
+        # O cálculo das penalidades foi feito seguindo um padrão arbitrário descrescente (ou seja, quanto mais próximas, maior a punição)
+
+        num_horarios = len(T)
+        w = np.zeros((num_horarios, num_horarios)) # De tamanho mXm pois é o custo pra fazer um aprova no horário i e outra no j. Ou seja, se i == j há conflito e o custo é máximo
+
+        for t1 in T:
+            for t2 in T:
+                dist = abs(t1 - t2)
+
+                if dist == 0:
+                    w[t1][t2] = 1000
+                elif dist == 1:
+                    w[t1][t2] = 10
+                elif dist == 2:
+                    w[t1][t2] = 5
+                elif dist == 3:
+                    w[t1][t2] = 1
+                else:
+                    w[t1][t2] = 0
 
         # Solução inicial (ponto de ínicio do Simulated Annealing)
-        solucao = [1,2,0]   # Formato: solucao[i] == horário em que a prova i será realizada
+        solucao = [1,2,8,3,4,7,9]   # Formato: solucao[i] == horário em que a prova i será realizada
 
     # Gera valores dinâmicos
     else:
@@ -251,13 +307,19 @@ def main():
 
     # Otimizando o resultado através de Simulated Annealing ---------------------------------------
 
+    start = time.time()   # Marca o início da execução
     # Gera a nova solução
-    new_sol, new_cost = simulated_annealing(solucao, conflitos,len(Provas), len(Horarios), w, alpha=0.99)
+    new_sol, new_cost = simulated_annealing(solucao, conflitos,len(Provas), len(Horarios), w, alpha=0.99999)
+    end = time.time()     # Marca o fim da execução
 
     # Exibe a solução e o custo final
+    print(f"Tempo de execução: {(end - start):.6f} segundos")
     print(f"Solução final encontrada => {new_sol}")
     print(f"Custo da solução: {new_cost}")
 
+    print("\nSolução detalhada:")
+    for i in range(len(new_sol)):
+        print(f"Prova de {Provas[i]}: {Horarios[new_sol[i]]}")
 
 # Main --------------
 DEFAULT_VALS = True

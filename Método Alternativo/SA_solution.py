@@ -1,3 +1,4 @@
+
 import numpy as np
 import random
 import math
@@ -108,6 +109,7 @@ def simulated_annealing(initial_sol: list[int],
             Retorna uma tupla no formato => nova solução, custo da nova solução.
     """
     # Copia a solução inicial e seu custo, formando o ponto de partida
+    n_sols = 0
     atual = initial_sol.copy()
     custo_atual = custo(atual,conflitos,custos)
 
@@ -123,6 +125,7 @@ def simulated_annealing(initial_sol: list[int],
 
         # Gera uma solução vizinha e encontra seu custo
         neighbor = gerar_vizinho(atual,Provas_len,Horarios_len)
+        n_sols += 1 # Explorou uma nova solução vizinha
         neighbor_cost = custo(neighbor,conflitos,custos)
 
         # Verifica a variação do custo
@@ -147,7 +150,7 @@ def simulated_annealing(initial_sol: list[int],
         # Decrementa a temperatura por um fator alpha
         T_cur *= alpha
 
-    return melhor, melhor_custo
+    return melhor, melhor_custo, n_sols
 
 
 def main():
@@ -254,7 +257,7 @@ def main():
                     w[t1][t2] = 0
 
         # Solução inicial (ponto de ínicio do Simulated Annealing)
-        solucao = [1,2,8,3,4,7,9]   # Formato: solucao[i] == horário em que a prova i será realizada
+        solucao = [1,2,3,4,5,6,7]   # Formato: solucao[i] == horário em que a prova i será realizada
 
     # Gera valores dinâmicos
     else:
@@ -313,13 +316,16 @@ def main():
 
     start = time.time()   # Marca o início da execução
     # Gera a nova solução
-    new_sol, new_cost = simulated_annealing(solucao, conflitos,len(Provas), len(Horarios), w, alpha=0.9999)
+    new_sol, new_cost, n_sols = simulated_annealing(solucao, conflitos,len(Provas), len(Horarios), w,
+        alpha=0.9999)
+        
     end = time.time()     # Marca o fim da execução
 
     # Exibe a solução e o custo final
     print(f"\nTempo de execução: {(end - start):.6f} segundos")
     print(f"Solução final encontrada => {new_sol}")
     print(f"Custo da solução: {new_cost}\n")
+    print(f"Número de soluções exploradas: {n_sols}")
 
     print("\nSolução detalhada:")
     for i in range(len(new_sol)):
